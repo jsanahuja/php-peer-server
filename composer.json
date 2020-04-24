@@ -1,0 +1,26 @@
+{
+    "name": "sowe/PHPPeerServer",
+    "description": "PHP Socket.io server for WebRTC signaling",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Javier Sanahuja",
+            "email": "bannss1@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "workerman/phpsocket.io": "^1.1",
+        "monolog/monolog": "^2.0",
+        "sowe/framework": "^1.3"
+    },
+    "autoload": {
+        "files": [ 
+            "config.php"
+        ],
+        "psr-4": {
+            "Sowe\\PHPPeerServer\\": "src/"
+        }
+    }
+}
