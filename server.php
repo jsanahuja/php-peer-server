@@ -43,10 +43,20 @@ $io->on('connection', function ($socket) use ($controller) {
 
     $controller->connect($socket);
 
-    $socket->on("disconnect", function () use ($socket, $controller) {
+    $socket->on("error", function ($exception) use ($socket, $controller) {
         $client = $controller->getClient($socket);
         if($client !== false){
-            $controller->disconnect($client);
+            $controller->handleException($client, $exception);
+        }
+    });
+
+    $socket->on("disconnect", function ($reason) use ($socket, $controller) {
+        $client = $controller->getClient($socket);
+        if($client !== false){
+            if($reason == $client->getId()){
+                $reason = "leaving";
+            }
+            $controller->disconnect($client, $reason);
         }
     });
 
@@ -64,17 +74,17 @@ $io->on('connection', function ($socket) use ($controller) {
         }
     });
 
-    $socket->on("create", function() use ($socket, $controller) {
+    $socket->on("create", function($name, $password) use ($socket, $controller) {
         $client = $controller->getClient($socket);
         if($client !== false){
-            $controller->createRoom($client);
+            $controller->createRoom($client, $name, $password);
         }
     });
     
-    $socket->on("join", function($roomId) use ($socket, $controller) {
+    $socket->on("join", function($roomId, $password) use ($socket, $controller) {
         $client = $controller->getClient($socket);
         if($client !== false){
-            $controller->joinRoom($client, $roomId);
+            $controller->joinRoom($client, $roomId, $password);
         }
     });
 

@@ -2,9 +2,13 @@
 
 namespace Sowe\PHPPeerServer;
 
+use Sowe\Framework\Keychain;
+
 use Sowe\PHPPeerServer\Call;
 use Sowe\PHPPeerServer\Mapping;
 use Sowe\PHPPeerServer\Exceptions\RoomIsFullException;
+use Sowe\PHPPeerServer\Exceptions\RoomWrongPasswordException;
+use Sowe\PHPPeerServer\Exceptions\ClientIsAlreadyInException;
 use Sowe\PHPPeerServer\Exceptions\ClientIsBannedException;
 use Sowe\PHPPeerServer\Exceptions\ClientIsNotBannedException;
 use Sowe\PHPPeerServer\Exceptions\ClientIsNotOwnerException;
@@ -12,26 +16,39 @@ use Sowe\PHPPeerServer\Exceptions\ClientIsNotInTheRoomException;
 
 class Room{
     protected $id;
+    protected $name;
+    protected $password;
     protected $clients;
     protected $owner;
     protected $banned;
     protected $data;
     
-    public function __construct($id, $owner){
+    public function __construct($id, $name, $password, $owner){
         $this->id = $id;
+        $this->name = $name;
+        $this->password = Keychain::hash($password);
         $this->clients = new Mapping();
         $this->banned = new Mapping();
         $this->owner = $owner;
         $this->calls = new Mapping();
 
-        $this->join($owner);
+        $this->join($owner, $password);
     }
 
     public function getId(){
         return $this->id;
     }
+
+    public function getName(){
+        return $this->name;
+    }
+
     public function getSocket($io){
         return $io->to($this->id);
+    }
+
+    public function equals(Room $other){
+        return $this->id === $other->getId();
     }
 
     /**
@@ -86,6 +103,10 @@ class Room{
         return $this->owner->equals($client);
     }
 
+    public function authorize($password){
+        return Keychain::hash_verify($this->password, $password);
+    }
+
     public function isMember(Client $client){
         return $this->clients->contains($client);
     }
@@ -101,15 +122,22 @@ class Room{
     /**
      * Actions
      */
-    public function join(Client $client){
+    public function join(Client $client, $password){
+        if($this->isMember($client)){
+            throw new ClientIsAlreadyInException();
+        }
+        if(!$this->authorize($password)){
+            throw new RoomWrongPasswordException();
+        }
         if($this->isFull()){
             throw new RoomIsFullException();
         }
         if($this->isBanned($client)){
             throw new ClientIsBannedException();
         }
-        $this->clients->add($client);
+
         $this->createCalls($client);
+        $this->clients->add($client);
         $client->setRoom($this);
     }
 
@@ -119,7 +147,7 @@ class Room{
         }
         $this->clients->remove($client);
         $this->removeCalls($client);
-        $client->removeCalls(false);
+        $client->setRoom(false);
     }
 
     public function kick(Client $client, Client $clientToKick){

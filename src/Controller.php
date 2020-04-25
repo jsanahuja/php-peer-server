@@ -5,6 +5,8 @@ namespace Sowe\PHPPeerServer;
 use Sowe\PHPPeerServer\Mapping;
 
 use Sowe\PHPPeerServer\Exceptions\RoomIsFullException;
+use Sowe\PHPPeerServer\Exceptions\RoomWrongPasswordException;
+use Sowe\PHPPeerServer\Exceptions\ClientIsAlreadyInException;
 use Sowe\PHPPeerServer\Exceptions\ClientIsBannedException;
 use Sowe\PHPPeerServer\Exceptions\ClientIsNotBannedException;
 use Sowe\PHPPeerServer\Exceptions\ClientIsNotOwnerException;
@@ -31,6 +33,10 @@ class Controller{
         return false;
     }
 
+    public function handleException($client, $exception){
+        $this->logger->error(__FUNCTION__.":".__LINE__ .":" . $client->getId() . ": " . $exception->getMessage());
+    }
+
     /**
      * Actions
      */
@@ -39,13 +45,13 @@ class Controller{
         $socket->ppsClient = $client;
         $this->clients->add($client);
 
-        $this->logger->info(__FUNCTION__.":".__LINE__ .":". $socket->conn->remoteAddress .": connected with ID: ". $socket->id . " (ONLINE: " . sizeof($this->clients) . ")");
+        $this->logger->info(__FUNCTION__.":".__LINE__ .":". $client->getId() .": connected (ONLINE: " . sizeof($this->clients) . ") (IP: " . $socket->conn->remoteAddress . ")");
     }
 
-    public function disconnect($client){
+    public function disconnect($client, $reason){
         $this->clients->remove($client);
 
-        $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . ": disconnected (ONLINE: " . sizeof($this->clients) . ")");
+        $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . ": disconnected (ONLINE: " . sizeof($this->clients) . ") (Reason: " . $reason . ")");
     }
 
     public function message($client, $message){
@@ -117,30 +123,47 @@ class Controller{
     /**
      * Room management
      */
-    public function createRoom($client){
+    public function createRoom($client, $name, $password){
         do{
             $roomId = bin2hex(random_bytes(ROOM_HASH_LENGTH));
         }while($this->rooms->hasKey($roomId));
 
-        $this->rooms->add(new Room($roomId, $client));
+        $this->rooms->add(new Room($roomId, $name, $password, $client));
         $client->getSocket()->emit("created", $roomId);
 
         $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " created the room " . $roomId);
     }
 
-    public function joinRoom($client, $roomId){
+    public function joinRoom($client, $roomId, $password){
+        $currentRoom = $client->getRoom();
         $room = $this->rooms->get($roomId);
 
-        $this->leaveRoom($client);
+        if($currentRoom !== false){
+            if($currentRoom->equals($room)){
+                // Already in this room
+                $this->logger->warning(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " tried to rejoin " . $roomId);
+                
+                $client->getSocket()->emit("join_alreadyin");
+                return;
+            }else{
+                // Leaving previous room
+                $this->leaveRoom($client);
+            }
+        }
 
         if($room !== false){
             try{
-                $room->join($client);
+                $room->join($client, $password);
                 // Joined
                 $client->getSocket()->emit("joined", $room->getId());
                 $room->getSocket($this->io)->emit("r_joined", $client->getId());
 
                 $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " joined " . $roomId);
+            }catch(RoomWrongPasswordException $e){
+                // Wrong room password
+                $client->getSocket()->emit("join_wrongpass");
+
+                $this->logger->error(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " join failed (wrong password) " . $roomId);
             }catch(RoomIsFullException $e){
                 // Room is full
                 $client->getSocket()->emit("join_full");
@@ -151,6 +174,9 @@ class Controller{
                 $client->getSocket()->emit("join_banned");
 
                 $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " join failed (banned) " . $roomId);
+            }catch(ClientIsAlreadyInException $e){
+                // Shouldnt happen because we're checking it earlier
+                $this->logger->error(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " ClientIsAlreadyInException " . $roomId . ". Report this error.");
             }
         }
 
@@ -223,8 +249,8 @@ class Controller{
         if($room !== false && $clientToUnban !== false){
             try{
                 $room->unban($client, $clientToUnban);
-                // Unbanned
-                $clientToUnban->getSocket()->emit("unbanned", $room->getId());
+                // Unbanned. Not notifying unbanned client.
+                // $clientToUnban->getSocket()->emit("unbanned", $room->getId());
                 $room->getSocket($this->io)->emit("r_unbanned", $clientToUnban->getId());
 
                 $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " unbanned " . $clientToUnban->getId() . " from " . $room->getId());

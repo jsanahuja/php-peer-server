@@ -5,9 +5,9 @@ PHP Socket.io server for WebRTC signaling.
 
 The following is the list of events you can send to the server. For example `socket.emit('join', 'a68ca609389b6ba7f0766b9ed1bfd8ca')`
 
-> `create()` creates a room.
+> `create(name, password)` creates a room.
 
-> `join(roomId)` joins a room.
+> `join(roomId, password)` joins a room.
 
 > `leave()` leaves the current room.
 
@@ -41,8 +41,6 @@ The following are the events the server will trigger.
 
 > `banned` notifies that you have been banned from the room.
 
-> `unbanned` notifies that you have been unbanned from the room.
-
 > `call(callId)` requests an offer for the call
 
 > `offer(callId, offer)` sends and offer and requires an answer
@@ -52,6 +50,10 @@ The following are the events the server will trigger.
 > `hangup(callId)` notifies that the call was closed
 
 Also the error events:
+
+> `join_alreadyin` notifies you can't join the room because you're already in.
+
+> `join_wrongpass` notifies you can't join the room because the password provided is wrong.
 
 > `join_full` notifies you can't join the room because it is full.
 
