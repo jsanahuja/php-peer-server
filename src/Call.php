@@ -40,6 +40,14 @@ class Call{
         $this->client1->getSocket()->emit("hangup", $this->id);
         $this->client2->getSocket()->emit("hangup", $this->id);
     }
+
+    public function candidate($client, $candidate){
+        if($this->client1->equals($client)){
+            $this->client2->getSocket()->emit("candidate", $this->id, $candidate);
+        }else if($this->client2->equals($client)){
+            $this->client1->getSocket()->emit("candidate", $this->id, $candidate);
+        }
+    }
     
     /**
      * Helpers

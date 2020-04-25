@@ -1,5 +1,5 @@
 # PHPPeerServer
-PHP Socket.io server for WebRTC signaling
+PHP Socket.io server for WebRTC signaling.
 
 ## Server events
 
@@ -21,7 +21,7 @@ The following is the list of events you can send to the server. For example `soc
 
 > `toggle(resource)` toggles a resource. The resources are 'screen', 'video' and 'audio'.
 
-> `candidate(candidate)` sends a candidate.
+> `candidate(callId, candidate)` sends a candidate.
 
 > `offer(callId, offer)` sends an offer. Must have been requested with the `call` event.
 
@@ -84,5 +84,3 @@ And the room events:
 > `r_banned(userId)` an user from your room was banned.
 
 > `r_unbanned(userId)` an user has been unbanned.
-
-> `r_candidate(userId, candidate)`

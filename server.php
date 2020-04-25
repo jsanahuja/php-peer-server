@@ -64,13 +64,6 @@ $io->on('connection', function ($socket) use ($controller) {
         }
     });
 
-    $socket->on("candidate", function($candidate) use ($socket, $controller) {
-        $client = $controller->getClient($socket);
-        if($client !== false){
-            $controller->candidate($client, $candidate);
-        }
-    });
-
     $socket->on("create", function() use ($socket, $controller) {
         $client = $controller->getClient($socket);
         if($client !== false){
@@ -116,6 +109,13 @@ $io->on('connection', function ($socket) use ($controller) {
     /**
      * Calls
      */
+    $socket->on("candidate", function($callId, $candidate) use ($socket, $controller) {
+        $client = $controller->getClient($socket);
+        if($client !== false){
+            $controller->candidate($client, $callId, $candidate);
+        }
+    });
+
     $socket->on("offer", function($callId, $offer) use ($socket, $controller) {
         $client = $controller->getClient($socket);
         if($client !== false){

@@ -55,17 +55,6 @@ class Client{
     }
 
     /**
-     * Candidates
-     */
-    public function addCandidate($candidate){
-        $this->candidates[] = $candidate;
-    }
-
-    public function getCandidates(){
-        return $this->candidates;
-    }
-
-    /**
      * Room
      */
     public function getRoom(){

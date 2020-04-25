@@ -52,6 +52,15 @@ class Room{
         }
     }
 
+    public function candidate(Client $client, $callId, $candidate){
+        $call = $this->calls->get($callId);
+        if($call !== false && $call->contains($client)){
+            $call->candidate($client, $candidate);
+            return true;
+        }
+        return false;
+    }
+
     public function offer(Client $client, $callId, $offer){
         $call = $this->calls->get($callId);
         if($call !== false && $call->clientCanOffer($client)){

@@ -74,20 +74,22 @@ class Controller{
         }
     }
 
-    public function candidate($client, $candidate){
-        $client->addCandidate($candidate);
-        
-        $room = $client->getRoom();
-        if($room !== false){
-            $room->getSocket($this->io)->emit("r_candidate", $client->getId(), $candidate);
-        }
-
-        $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " added a candidate");
-    }
 
     /**
      * Call management
      */
+    public function candidate($client, $callId, $candidate){
+        $room = $client->getRoom();
+        if($room !== false){
+            if($room->candidate($client, $callId, $candidate)){
+                // Candidate sent
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " sent a candidate " .  $callId);
+                return;
+            }
+        }
+        $this->logger->warning(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " tried to send a candidate " .  $callId);
+    }
+
     public function offer(Client $client, $callId, $offer){
         $room = $client->getRoom();
         if($room !== false){
