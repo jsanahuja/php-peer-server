@@ -23,6 +23,8 @@ The following is the list of events you can send to the server. For example `soc
 
 > `toggle(resource)` toggles a resource. The resources are 'screen', 'video' and 'audio'.
 
+> `candidate(candidate)`
+
 ## Server responses
 
 The following are the events the server will trigger.
@@ -65,7 +67,7 @@ And the room events:
 
 > `r_resource(userId, resource, status)` someone in your room toggled the status of one of its resources.
 
-> `r_joined(userId)` an user joined your room.
+> `r_joined(userId, answer)` an user joined your room.
 
 > `r_left(userId)` an user left your room.
 
@@ -74,3 +76,5 @@ And the room events:
 > `r_banned(userId)` an user from your room was banned.
 
 > `r_unbanned(userId)` an user has been unbanned.
+
+> `r_candidate(userId, candidate)`

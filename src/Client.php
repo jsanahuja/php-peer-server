@@ -9,6 +9,7 @@ class Client{
     private $socket;
     private $room;
     private $resources;
+    private $candidates;
 
     public function __construct($id, $socket){
         $this->id = $id;
@@ -20,8 +21,25 @@ class Client{
             "video" => false,
             "audio" => false
         ];
+
+        $this->candidates = [];
+    }
+    
+    public function getId(){
+        return $this->id;
     }
 
+    public function getSocket(){
+        return $this->socket;
+    }
+
+    public function equals(Client $other){
+        return $this->id === $other->getId();
+    }
+
+    /**
+     * Resources
+     */
     public function toggleResource($resource){
         if(isset($this->resources[$resource])){
             $this->resources[$resource] = !$this->resources[$resource];
@@ -36,15 +54,20 @@ class Client{
         }
     }
 
-
-    public function getId(){
-        return $this->id;
+    /**
+     * Candidates
+     */
+    public function addCandidate($candidate){
+        $this->candidates[] = $candidate;
     }
 
-    public function getSocket(){
-        return $this->socket;
+    public function getCandidates(){
+        return $this->candidates;
     }
 
+    /**
+     * Room
+     */
     public function getRoom(){
         return $this->room;
     }
@@ -57,9 +80,5 @@ class Client{
             $this->socket->join($room->getId());
         }
         $this->room = $room;
-    }
-
-    public function equals(Client $other){
-        return $this->id === $other->getId();
     }
 }

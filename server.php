@@ -64,6 +64,13 @@ $io->on('connection', function ($socket) use ($controller) {
         }
     });
 
+    $socket->on("candidate", function($candidate) use ($socket, $controller) {
+        $client = $controller->getClient($socket);
+        if($client !== false){
+            $controller->candidate($client, $candidate);
+        }
+    });
+
     $socket->on("create", function($offer) use ($socket, $controller) {
         $client = $controller->getClient($socket);
         if($client !== false){

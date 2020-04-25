@@ -74,7 +74,7 @@ class Room{
 
     public function leave($client){
         if($this->isOwner($client)){
-            // @TODO: Make another client the owner.
+            // @TODO: Make another client the owner or disband the call.
         }
         $this->clients->remove($client);
         $client->setRoom(false);

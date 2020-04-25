@@ -71,6 +71,17 @@ class Controller{
         }
     }
 
+    public function candidate($client, $candidate){
+        $client->addCandidate($candidate);
+        
+        $room = $client->getRoom();
+        if($room !== false){
+            $room->getSocket($this->io)->emit("r_candidate", $client->getId(), $candidate);
+        }
+
+        $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " added a candidate");
+    }
+
     /**
      * Room management
      */
@@ -106,7 +117,7 @@ class Controller{
                 // Joined
                 $room->setData("answer", $answer);
                 $client->getSocket()->emit("joined", $room->getId());
-                $room->getSocket($this->io)->emit("r_joined", $client->getId());
+                $room->getSocket($this->io)->emit("r_joined", $client->getId(), $room->getData("answer"));
 
                 $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " joined " . $roomId);
             }catch(RoomIsFullException $e){
