@@ -31,6 +31,9 @@ class Controller{
         return false;
     }
 
+    /**
+     * Actions
+     */
     public function connect($socket){
         $client = new Client($socket->id, $socket);
         $socket->ppsClient = $client;
@@ -83,30 +86,47 @@ class Controller{
     }
 
     /**
+     * Call management
+     */
+    public function offer(Client $client, $callId, $offer){
+        $room = $client->getRoom();
+        if($room !== false){
+            if($room->offer($client, $callId, $offer)){
+                // Offered
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " offered " .  $callId);
+                return;
+            }
+        }
+        $this->logger->warning(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " tried to offer " .  $callId);
+    }
+
+    public function answer(Client $client, $callId, $answer){
+        $room = $client->getRoom();
+        if($room !== false){
+            if($room->answer($client, $callId, $answer)){
+                // Answered
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " answered " .  $callId);
+                return;
+            }
+        }
+        $this->logger->warning(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " tried to answer " .  $callId);
+    }
+
+    /**
      * Room management
      */
-    public function createRoom($client, $offer){
+    public function createRoom($client){
         do{
             $roomId = bin2hex(random_bytes(ROOM_HASH_LENGTH));
         }while($this->rooms->hasKey($roomId));
 
-        $room = new Room($roomId, $client);
-        $room->setData("offer", $offer);
-        $this->rooms->add($room);
+        $this->rooms->add(new Room($roomId, $client));
         $client->getSocket()->emit("created", $roomId);
 
         $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " created the room " . $roomId);
     }
 
-    public function getRoom($client, $roomId){
-        $room = $this->rooms->get($roomId);
-        if($room !== false){
-            // Getting
-            $client->getSocket()->emit("gotten", $room->getData("offer"));
-        }
-    }
-
-    public function joinRoom($client, $roomId, $answer){
+    public function joinRoom($client, $roomId){
         $room = $this->rooms->get($roomId);
 
         $this->leaveRoom($client);
@@ -115,9 +135,8 @@ class Controller{
             try{
                 $room->join($client);
                 // Joined
-                $room->setData("answer", $answer);
                 $client->getSocket()->emit("joined", $room->getId());
-                $room->getSocket($this->io)->emit("r_joined", $client->getId(), $room->getData("answer"));
+                $room->getSocket($this->io)->emit("r_joined", $client->getId());
 
                 $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " joined " . $roomId);
             }catch(RoomIsFullException $e){

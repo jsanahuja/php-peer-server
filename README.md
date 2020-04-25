@@ -5,11 +5,9 @@ PHP Socket.io server for WebRTC signaling
 
 The following is the list of events you can send to the server. For example `socket.emit('join', 'a68ca609389b6ba7f0766b9ed1bfd8ca')`
 
-> `create(offer)` creates a room
+> `create()` creates a room.
 
-> `get(roomId)` asks for the room offer
-
-> `join(roomId, answer)` joins a room with an answer.
+> `join(roomId)` joins a room.
 
 > `leave()` leaves the current room.
 
@@ -23,15 +21,17 @@ The following is the list of events you can send to the server. For example `soc
 
 > `toggle(resource)` toggles a resource. The resources are 'screen', 'video' and 'audio'.
 
-> `candidate(candidate)`
+> `candidate(candidate)` sends a candidate.
+
+> `offer(callId, offer)` sends an offer. Must have been requested with the `call` event.
+
+> `answer(callId, answer)` sends an answer. Must have been requested with the `offer` event.
 
 ## Server responses
 
 The following are the events the server will trigger.
 
 > `created(roomId)` confirms you created a room.
-
-> `gotten(roomId, offer)` answers the get requests with the offer.
 
 > `joined(roomId)` confirms you joined the room.
 
@@ -42,6 +42,14 @@ The following are the events the server will trigger.
 > `banned` notifies that you have been banned from the room.
 
 > `unbanned` notifies that you have been unbanned from the room.
+
+> `call(callId)` requests an offer for the call
+
+> `offer(callId, offer)` sends and offer and requires an answer
+
+> `answer(callId, answer)` sends an answer to the offer
+
+> `hangup(callId)` notifies that the call was closed
 
 Also the error events:
 
@@ -67,7 +75,7 @@ And the room events:
 
 > `r_resource(userId, resource, status)` someone in your room toggled the status of one of its resources.
 
-> `r_joined(userId, answer)` an user joined your room.
+> `r_joined(userId)` an user joined your room.
 
 > `r_left(userId)` an user left your room.
 

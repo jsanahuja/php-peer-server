@@ -2,6 +2,8 @@
 
 namespace Sowe\PHPPeerServer;
 
+use Sowe\PHPPeerServer\Call;
+use Sowe\PHPPeerServer\Mapping;
 use Sowe\PHPPeerServer\Exceptions\RoomIsFullException;
 use Sowe\PHPPeerServer\Exceptions\ClientIsBannedException;
 use Sowe\PHPPeerServer\Exceptions\ClientIsNotBannedException;
@@ -20,20 +22,9 @@ class Room{
         $this->clients = new Mapping();
         $this->banned = new Mapping();
         $this->owner = $owner;
-        $this->data = [];
+        $this->calls = new Mapping();
 
         $this->join($owner);
-    }
-
-    public function getData($type = null){
-        if($type !== null && isset($this->data[$type])){
-            return $this->data[$type];
-        }
-        return $this->data;
-    }
-
-    public function setData($type, $data){
-        $this->data[$type] = $data;
     }
 
     public function getId(){
@@ -42,18 +33,58 @@ class Room{
     public function getSocket($io){
         return $io->to($this->id);
     }
+
     /**
-     * State helpers
+     * Calls
      */
-    public function isOwner($client){
+    public function createCalls(Client $client){
+        foreach($this->clients as $c){
+            $this->calls->add(new Call($this, $c, $client));
+        }
+    }
+
+    public function removeCalls(Client $client){
+        foreach($this->calls as $call){
+            if($call->contains($client)){
+                $call->hangup();
+                $this->calls->remove($call);
+            }
+        }
+    }
+
+    public function offer(Client $client, $callId, $offer){
+        $call = $this->calls->get($callId);
+        if($call !== false && $call->clientCanOffer($client)){
+            $call->offer($offer);
+            return true;
+        }
+        return false;
+    }
+
+    public function answer(Client $client, $callId, $answer){
+        $call = $this->calls->get($callId);
+        if($call !== false && $call->clientCanAnswer($client)){
+            $call->answer($answer);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Status helpers
+     */
+    public function isOwner(Client $client){
         return $this->owner->equals($client);
     }
-    public function isMember($client){
+
+    public function isMember(Client $client){
         return $this->clients->contains($client);
     }
-    public function isBanned($client){
+
+    public function isBanned(Client $client){
         return $this->banned->contains($client);
     }
+
     public function isFull(){
         return sizeof($this->clients) >= ROOM_MAX_CLIENTS;
     }
@@ -61,7 +92,7 @@ class Room{
     /**
      * Actions
      */
-    public function join($client){
+    public function join(Client $client){
         if($this->isFull()){
             throw new RoomIsFullException();
         }
@@ -69,18 +100,20 @@ class Room{
             throw new ClientIsBannedException();
         }
         $this->clients->add($client);
+        $this->createCalls($client);
         $client->setRoom($this);
     }
 
-    public function leave($client){
+    public function leave(Client $client){
         if($this->isOwner($client)){
             // @TODO: Make another client the owner or disband the call.
         }
         $this->clients->remove($client);
-        $client->setRoom(false);
+        $this->removeCalls($client);
+        $client->removeCalls(false);
     }
 
-    public function kick($client, $clientToKick){
+    public function kick(Client $client, Client $clientToKick){
         if(!$this->isOwner($client)){
             throw new ClientIsNotOwnerException();
         }
@@ -88,10 +121,11 @@ class Room{
             throw new ClientIsNotInTheRoomException();
         }
         $this->clients->remove($clientToKick);
+        $this->removeCalls($clientToKick);
         $client->setRoom(false);
     }
 
-    public function ban($client, $clientToBan){
+    public function ban(Client $client, Client $clientToBan){
         if(!$this->isOwner($client)){
             throw new ClientIsNotOwnerException();
         }
@@ -103,11 +137,12 @@ class Room{
 
         if(!$this->isMember($clientToBan)){
             $this->clients->remove($clientToBan);
+            $this->removeCalls($clientToBan);
             $client->setRoom(false);
         }
     }
 
-    public function unban($client, $clientToUnban){
+    public function unban(Client $client, Client $clientToUnban){
         if(!$this->isOwner($client)){
             throw new ClientIsNotOwnerException();
         }

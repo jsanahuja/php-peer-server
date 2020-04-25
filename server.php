@@ -71,24 +71,17 @@ $io->on('connection', function ($socket) use ($controller) {
         }
     });
 
-    $socket->on("create", function($offer) use ($socket, $controller) {
+    $socket->on("create", function() use ($socket, $controller) {
         $client = $controller->getClient($socket);
         if($client !== false){
-            $controller->createRoom($client, $offer);
-        }
-    });
-
-    $socket->on("get", function($roomId) use ($socket, $controller) {
-        $client = $controller->getClient($socket);
-        if($client !== false){
-            $controller->getRoom($client, $roomId);
+            $controller->createRoom($client);
         }
     });
     
-    $socket->on("join", function($roomId, $answer) use ($socket, $controller) {
+    $socket->on("join", function($roomId) use ($socket, $controller) {
         $client = $controller->getClient($socket);
         if($client !== false){
-            $controller->joinRoom($client, $roomId, $answer);
+            $controller->joinRoom($client, $roomId);
         }
     });
 
@@ -117,6 +110,22 @@ $io->on('connection', function ($socket) use ($controller) {
         $client = $controller->getClient($socket);
         if($client !== false){
             $controller->unbanFromRoom($client, $userId);
+        }
+    });
+
+    /**
+     * Calls
+     */
+    $socket->on("offer", function($callId, $offer) use ($socket, $controller) {
+        $client = $controller->getClient($socket);
+        if($client !== false){
+            $controller->offer($client, $callId, $offer);
+        }
+    });
+    $socket->on("answer", function($callId, $answer) use ($socket, $controller) {
+        $client = $controller->getClient($socket);
+        if($client !== false){
+            $controller->answer($client, $callId, $answer);
         }
     });
 
