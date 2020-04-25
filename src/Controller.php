@@ -24,7 +24,7 @@ class Controller{
     }
 
     public function getClient($socket){
-        $client = $socket->client;
+        $client = $socket->ppsClient;
         if($this->clients->hasKey($client->getId())){
             return $client;
         }
@@ -33,16 +33,16 @@ class Controller{
 
     public function connect($socket){
         $client = new Client($socket->id, $socket);
-        $socket->client = $client;
+        $socket->ppsClient = $client;
         $this->clients->add($client);
 
-        $this->logger->info(__FUNCTION__.":".__LINE__ .":". $socket->conn->remoteAddress .": connected with ID: "+ $socket->id);
+        $this->logger->info(__FUNCTION__.":".__LINE__ .":". $socket->conn->remoteAddress .": connected with ID: ". $socket->id . " (ONLINE: " . sizeof($this->clients) . ")");
     }
 
     public function disconnect($client){
         $this->clients->remove($client);
 
-        $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + ": disconnected");
+        $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . ": disconnected (ONLINE: " . sizeof($this->clients) . ")");
     }
 
     public function message($client, $message){
@@ -57,7 +57,7 @@ class Controller{
                 "message" => $message
             ]);
     
-            $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " message in " + $room->getId() + ": "+ $message);
+            $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " message in " . $room->getId() . ": " . $message);
         }
     }
 
@@ -74,18 +74,28 @@ class Controller{
     /**
      * Room management
      */
-    public function createRoom($client){
+    public function createRoom($client, $offer){
         do{
             $roomId = bin2hex(random_bytes(ROOM_HASH_LENGTH));
         }while($this->rooms->hasKey($roomId));
 
-        $this->rooms->add(new Room($id, $client));
+        $room = new Room($roomId, $client);
+        $room->setData("offer", $offer);
+        $this->rooms->add($room);
         $client->getSocket()->emit("created", $roomId);
 
-        $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " created the room " + $roomId);
+        $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " created the room " . $roomId);
     }
 
-    public function joinRoom($client, $roomId){
+    public function getRoom($client, $roomId){
+        $room = $this->rooms->get($roomId);
+        if($room !== false){
+            // Getting
+            $client->getSocket()->emit("gotten", $room->getData("offer"));
+        }
+    }
+
+    public function joinRoom($client, $roomId, $answer){
         $room = $this->rooms->get($roomId);
 
         $this->leaveRoom($client);
@@ -94,20 +104,21 @@ class Controller{
             try{
                 $room->join($client);
                 // Joined
+                $room->setData("answer", $answer);
                 $client->getSocket()->emit("joined", $room->getId());
                 $room->getSocket($this->io)->emit("r_joined", $client->getId());
 
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " joined " + $roomId);
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " joined " . $roomId);
             }catch(RoomIsFullException $e){
                 // Room is full
                 $client->getSocket()->emit("join_full");
 
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " join failed (full) " + $roomId);
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " join failed (full) " . $roomId);
             }catch(ClientIsBannedException $e){
                 // Client is banned
                 $client->getSocket()->emit("join_banned");
 
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " join failed (banned) " + $roomId);
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " join failed (banned) " . $roomId);
             }
         }
 
@@ -120,7 +131,7 @@ class Controller{
             $client->getSocket()->emit("left", $room->getId());
             $room->getSocket($this->io)->emit("r_left", $client->getId());
 
-            $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " left " + $room->getId());
+            $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " left " . $room->getId());
         }
     }
 
@@ -134,17 +145,17 @@ class Controller{
                 $clientToKick->getSocket()->emit("kicked", $room->getId());
                 $room->getSocket($this->io)->emit("r_kicked", $clientToKick->getId());
 
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " kicked " + $clientToKick->getId() + " from " + $room->getId());
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " kicked " . $clientToKick->getId() . " from " . $room->getId());
             }catch(ClientIsNotOwnerException $e){
                 // Client is not the owner
                 $client->getSocket()->emit("kick_noprivileges");
 
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " failed kicking (privileges) " + $clientToKick->getId() + " from " + $room->getId());
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " failed kicking (privileges) " . $clientToKick->getId() . " from " . $room->getId());
             }catch(ClientIsNotInTheRoomException $e){
                 // ClientToKick is no longuer in the room
                 $client->getSocket()->emit("kick_notin");
 
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " failed kicking (not in) " + $clientToKick->getId() + " from " + $room->getId());
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " failed kicking (not in) " . $clientToKick->getId() . " from " . $room->getId());
             }
         }
     }
@@ -159,17 +170,17 @@ class Controller{
                 $clientToBan->getSocket()->emit("banned", $room->getId());
                 $room->getSocket($this->io)->emit("r_banned", $clientToBan->getId());
 
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " banned " + $clientToBan->getId() + " from " + $room->getId());
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " banned " . $clientToBan->getId() . " from " . $room->getId());
             }catch(ClientIsNotOwnerException $e){
                 // Client is not the owner
                 $client->getSocket()->emit("ban_noprivileges");
 
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " failed banning (privileges) " + $clientToBan->getId() + " from " + $room->getId());
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " failed banning (privileges) " . $clientToBan->getId() . " from " . $room->getId());
             }catch(ClientIsBannedException $e){
                 // ClientToBan is already banned
                 $client->getSocket()->emit("ban_already");
 
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " failed banning (already) " + $clientToBan->getId() + " from " + $room->getId());
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " failed banning (already) " . $clientToBan->getId() . " from " . $room->getId());
             }
         }
     }
@@ -184,15 +195,15 @@ class Controller{
                 $clientToUnban->getSocket()->emit("unbanned", $room->getId());
                 $room->getSocket($this->io)->emit("r_unbanned", $clientToUnban->getId());
 
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " unbanned " + $clientToUnban->getId() + " from " + $room->getId());
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " unbanned " . $clientToUnban->getId() . " from " . $room->getId());
             }catch(ClientIsNotOwnerException $e){
                 // Client is not the owner
                 $client->getSocket()->emit("unban_noprivileges");
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " failed unbanning (privileges) " + $clientToUnban->getId() + " from " + $room->getId());
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " failed unbanning (privileges) " . $clientToUnban->getId() . " from " . $room->getId());
             }catch(ClientIsNotBannedException $e){
                 // ClientToUnban is not banned
                 $client->getSocket()->emit("unban_notbanned");
-                $this->logger->info(__FUNCTION__.":".__LINE__ .":" + $client->getId() + " failed unbanning (not banned) " + $clientToUnban->getId() + " from " + $room->getId());
+                $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " failed unbanning (not banned) " . $clientToUnban->getId() . " from " . $room->getId());
             }
         }
     }

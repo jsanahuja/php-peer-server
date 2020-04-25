@@ -13,14 +13,27 @@ class Room{
     protected $clients;
     protected $owner;
     protected $banned;
+    protected $data;
     
     public function __construct($id, $owner){
         $this->id = $id;
         $this->clients = new Mapping();
         $this->banned = new Mapping();
         $this->owner = $owner;
+        $this->data = [];
 
         $this->join($owner);
+    }
+
+    public function getData($type = null){
+        if($type !== null && isset($this->data[$type])){
+            return $this->data[$type];
+        }
+        return $this->data;
+    }
+
+    public function setData($type, $data){
+        $this->data[$type] = $data;
     }
 
     public function getId(){

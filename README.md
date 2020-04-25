@@ -5,9 +5,11 @@ PHP Socket.io server for WebRTC signaling
 
 The following is the list of events you can send to the server. For example `socket.emit('join', 'a68ca609389b6ba7f0766b9ed1bfd8ca')`
 
-> `create()` creates a room.
+> `create(offer)` creates a room
 
-> `join(roomId)` joins a room.
+> `get(roomId)` asks for the room offer
+
+> `join(roomId, answer)` joins a room with an answer.
 
 > `leave()` leaves the current room.
 
@@ -26,6 +28,8 @@ The following is the list of events you can send to the server. For example `soc
 The following are the events the server will trigger.
 
 > `created(roomId)` confirms you created a room.
+
+> `gotten(roomId, offer)` answers the get requests with the offer.
 
 > `joined(roomId)` confirms you joined the room.
 

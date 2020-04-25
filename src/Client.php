@@ -51,10 +51,10 @@ class Client{
 
     public function setRoom($room){
         if($this->room !== false){
-            $client->getSocket()->leave($this->room->getId());
+            $this->socket->leave($this->room->getId());
         }
         if($room !== false){
-            $client->getSocket()->join($room->getId());
+            $this->socket->join($room->getId());
         }
         $this->room = $room;
     }

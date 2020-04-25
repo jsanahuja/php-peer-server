@@ -64,17 +64,24 @@ $io->on('connection', function ($socket) use ($controller) {
         }
     });
 
-    $socket->on("create", function() use ($socket, $controller) {
+    $socket->on("create", function($offer) use ($socket, $controller) {
         $client = $controller->getClient($socket);
         if($client !== false){
-            $controller->createRoom($client);
+            $controller->createRoom($client, $offer);
         }
     });
 
-    $socket->on("join", function($roomId) use ($socket, $controller) {
+    $socket->on("get", function($roomId) use ($socket, $controller) {
         $client = $controller->getClient($socket);
         if($client !== false){
-            $controller->joinRoom($client, $roomId);
+            $controller->getRoom($client, $roomId);
+        }
+    });
+    
+    $socket->on("join", function($roomId, $answer) use ($socket, $controller) {
+        $client = $controller->getClient($socket);
+        if($client !== false){
+            $controller->joinRoom($client, $roomId, $answer);
         }
     });
 
