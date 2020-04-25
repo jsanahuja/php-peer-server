@@ -18,11 +18,22 @@ class Controller{
     private $clients;
     private $rooms;
     
+    private static $instance = null;
+
+    public static function getInstance(){
+        if(self::$instance === null){
+            throw new \Exception("Controller hasn't been instantiated");
+        }
+        return self::$instance;
+    }
+
     public function __construct($io, $logger){
         $this->io = $io;
         $this->logger = $logger;
         $this->clients = new Mapping();
         $this->rooms = new Mapping();
+
+        self::$instance = $this;
     }
 
     public function getClient($socket){
@@ -35,6 +46,16 @@ class Controller{
 
     public function handleException($client, $exception){
         $this->logger->error(__FUNCTION__.":".__LINE__ .":" . $client->getId() . ": " . $exception->getMessage());
+    }
+
+    public function unsetRoom($room){
+        $this->rooms->remove($room);
+        $this->logger->info(__FUNCTION__.":".__LINE__ .": room killed " . $room->getId());
+    }
+
+    public function roomChanged($room){
+        $this->logger->info(__FUNCTION__.":".__LINE__ .": room changed " . $room->getId());
+        // @TODO: update clients info
     }
 
     /**
@@ -128,6 +149,11 @@ class Controller{
             $roomId = bin2hex(random_bytes(ROOM_HASH_LENGTH));
         }while($this->rooms->hasKey($roomId));
 
+        $currentRoom = $client->getRoom();
+        if($currentRoom !== false){
+            $this->leaveRoom($client);
+        }
+
         $this->rooms->add(new Room($roomId, $name, $password, $client));
         $client->getSocket()->emit("created", $roomId);
 
@@ -155,6 +181,7 @@ class Controller{
             try{
                 $room->join($client, $password);
                 // Joined
+                // @TODO: send clients info
                 $client->getSocket()->emit("joined", $room->getId());
                 $room->getSocket($this->io)->emit("r_joined", $client->getId());
 

@@ -4,6 +4,7 @@ namespace Sowe\PHPPeerServer;
 
 use Sowe\Framework\Keychain;
 
+use Sowe\PHPPeerServer\Controller;
 use Sowe\PHPPeerServer\Call;
 use Sowe\PHPPeerServer\Mapping;
 use Sowe\PHPPeerServer\Exceptions\RoomIsFullException;
@@ -143,7 +144,17 @@ class Room{
 
     public function leave(Client $client){
         if($this->isOwner($client)){
-            // @TODO: Make another client the owner or disband the call.
+            if(sizeof($this->clients) > 1){
+                foreach($this->clients as $newOwner){
+                    if(!$client->equals($newOwner)){
+                        $this->owner = $newOwner;
+                        Controller::getInstance()->roomChanged($this);
+                        break;
+                    }
+                }
+            }else{
+                Controller::getInstance()->unsetRoom($this);
+            }
         }
         $this->clients->remove($client);
         $this->removeCalls($client);
