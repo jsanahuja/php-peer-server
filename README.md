@@ -41,6 +41,8 @@ The following are the events the server will trigger.
 
 > `banned` notifies that you have been banned from the room.
 
+> `unbanned` notifies that you have been unbanned from a room.
+
 > `call(callId)` requests an offer for the call
 
 > `offer(callId, offer)` sends and offer and requires an answer

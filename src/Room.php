@@ -40,8 +40,11 @@ class Room{
         return $this->id;
     }
 
-    public function getName(){
-        return $this->name;
+    public function getPublicInfo(){
+        return [
+            "name" => $this->name,
+            "id" => $this->id
+        ];
     }
 
     public function getSocket($io){

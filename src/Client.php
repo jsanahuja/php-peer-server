@@ -29,6 +29,12 @@ class Client{
         return $this->id;
     }
 
+    public function getPublicInfo(){
+        return [
+            "id" => $this->id
+        ];
+    }
+
     public function getSocket(){
         return $this->socket;
     }
@@ -52,6 +58,10 @@ class Client{
         if(isset($this->resources[$resource])){
             return $this->resources[$resource];
         }
+    }
+
+    public function getResources(){
+        return $this->resources;
     }
 
     /**
