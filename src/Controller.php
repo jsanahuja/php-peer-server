@@ -164,20 +164,20 @@ class Controller{
         $currentRoom = $client->getRoom();
         $room = $this->rooms->get($roomId);
 
-        if($currentRoom !== false){
-            if($currentRoom->equals($room)){
-                // Already in this room
-                $this->logger->warning(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " tried to rejoin " . $roomId);
-                
-                $client->getSocket()->emit("join_alreadyin");
-                return;
-            }else{
-                // Leaving previous room
-                $this->leaveRoom($client);
-            }
-        }
-
         if($room !== false){
+            if($currentRoom !== false){
+                if($currentRoom->equals($room)){
+                    // Already in this room
+                    $this->logger->warning(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " tried to rejoin " . $roomId);
+                    
+                    $client->getSocket()->emit("join_alreadyin");
+                    return;
+                }else{
+                    // Leaving previous room
+                    $this->leaveRoom($client);
+                }
+            }
+
             try{
                 $room->join($client, $password);
                 // Joined
@@ -206,7 +206,6 @@ class Controller{
                 $this->logger->error(__FUNCTION__.":".__LINE__ .":" . $client->getId() . " ClientIsAlreadyInException " . $roomId . ". Report this error.");
             }
         }
-
     }
 
     public function leaveRoom($client){
