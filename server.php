@@ -21,10 +21,10 @@ $formatter = new LineFormatter("[%datetime%]:%level_name%: %message%\n", "Y-m-d\
 $stream = new StreamHandler(LOG_PATH, Logger::DEBUG);
 $stream->setFormatter($formatter);
 $logger->pushHandler($stream);
-//  $handler = new ErrorHandler($logger);
-//  $handler->registerErrorHandler([], false);
-//  $handler->registerExceptionHandler();
-//  $handler->registerFatalHandler();
+$handler = new ErrorHandler($logger);
+$handler->registerErrorHandler([], false);
+$handler->registerExceptionHandler();
+$handler->registerFatalHandler();
 
 $io = new SocketIO(PORT, array(
     'ssl' => array(

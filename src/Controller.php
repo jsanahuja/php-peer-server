@@ -70,6 +70,7 @@ class Controller{
     }
 
     public function disconnect($client, $reason){
+        $this->leaveRoom($client);
         $this->clients->remove($client);
 
         $this->logger->info(__FUNCTION__.":".__LINE__ .":" . $client->getId() . ": disconnected (ONLINE: " . sizeof($this->clients) . ") (Reason: " . $reason . ")");
