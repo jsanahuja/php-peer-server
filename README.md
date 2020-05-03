@@ -3,7 +3,7 @@ PHP Socket.io server for WebRTC signaling.
 
 Client: https://github.com/jsanahuja/peer-client
 
-Demo: http://webrtc.sowecms.com/client/index.html
+Demo: https://webrtc.sowecms.com/client/index.html
 
 ## Server events
 
