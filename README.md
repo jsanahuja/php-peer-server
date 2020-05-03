@@ -1,6 +1,9 @@
 # PHPPeerServer
 PHP Socket.io server for WebRTC signaling.
 
+Client: https://github.com/jsanahuja/peer-client
+Demo: http://webrtc.sowecms.com/client/index.html
+
 ## Server events
 
 The following is the list of events you can send to the server. For example `socket.emit('join', 'a68ca609389b6ba7f0766b9ed1bfd8ca')`
