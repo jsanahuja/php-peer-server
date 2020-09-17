@@ -3,6 +3,40 @@ PHP Socket.io server for WebRTC signaling.
 
 Client: https://github.com/jsanahuja/peer-client
 
+## Install
+Clone both client and server and install dependencies.
+```
+git clone https://github.com/jsanahuja/php-peer-server.git
+git clone https://github.com/jsanahuja/peer-client.git
+cd php-peer-server 
+composer install
+cd ../peer-client
+npm install
+npm run build
+```
+
+Create your server configuration file
+```
+cd ../php-peer-server
+cp config.example.php config.php
+```
+Generate your Keychain private key:
+```
+php make_keychain.php
+```
+> Result example: 1949e2278ea5767099e592ae8dd15677ecf851efd177a1f0fb1d44e8e79231f5
+
+Place the result in the constant `KEYCHAIN_PK` defined in the `config.php` file we just created. Set also the absolute path to your `CERT_CA` and `CERT_KEY` files. You can play with the other constant values but it should be good to go. Note that if you want to change the `PORT` you will have to change it in the `peer-client` too.
+
+Start the server as a daemon
+```
+php server.php start -d
+```
+
+## Management
+
+Here you can see a list of the available commands: https://github.com/walkor/Workerman#available-commands
+
 ## Server events
 
 The following is the list of events you can send to the server. For example `socket.emit('join', 'a68ca609389b6ba7f0766b9ed1bfd8ca')`
