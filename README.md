@@ -35,11 +35,13 @@ Start the server as a daemon
 php server.php start -d
 ```
 
-Note: Do not forget to open/whitelist the `PORT` or the server won't be accessible. For example with `firewalld` you would do:
+Do not forget to open/whitelist the `PORT` or the server won't be accessible. For example with `firewalld` you would do:
 ```
 firewall-cmd --zone=public --permanent --add-port=8999/tcp
 firewall-cmd --reload
 ```
+
+Note: The HTTP server should be pointing to the `peer-client` folder.
 
 ## Management
 
