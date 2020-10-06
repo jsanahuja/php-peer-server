@@ -47,7 +47,7 @@ Note: The HTTP server should be pointing to the `peer-client` folder.
 
 Here you can see a list of the available commands: https://github.com/walkor/Workerman#available-commands
 
-## Server events
+## Server actions
 
 The following is the list of events you can send to the server. For example `socket.emit('join', 'a68ca609389b6ba7f0766b9ed1bfd8ca')`
 
