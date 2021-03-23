@@ -2,8 +2,8 @@
 
 namespace Sowe\PHPPeerServer;
 
+use PHPSocketIO\SocketIO;
 use Sowe\PHPPeerServer\Mapping;
-
 use Sowe\PHPPeerServer\Exceptions\RoomIsFullException;
 use Sowe\PHPPeerServer\Exceptions\RoomWrongPasswordException;
 use Sowe\PHPPeerServer\Exceptions\ClientIsAlreadyInException;
@@ -27,8 +27,7 @@ class Controller{
         return self::$instance;
     }
 
-    public function __construct($io, $logger){
-        $this->io = $io;
+    public function __construct($logger){
         $this->logger = $logger;
         $this->clients = new Mapping();
         $this->rooms = new Mapping();
@@ -89,7 +88,7 @@ class Controller{
 
     public function toggleResource($client, $resource){
         if($client->toggleResource($resource)){
-            $room->getSocket($this->io)->emit("r_resource", $client->getPublicInfo(), $client->getResources());
+            $client->getRoom()->getSocket($this->io)->emit("r_resource", $client->getPublicInfo(), $client->getResources());
         }
     }
 
@@ -282,4 +281,124 @@ class Controller{
         }
     }
 
+    /**
+     * Binding
+     */
+    public function bind(){
+        $this->io = new SocketIO(PORT, array(
+            'ssl' => array(
+                'local_cert'  => CERT_CA,
+                'local_pk'    => CERT_KEY,
+                'verify_peer' => false,
+                'allow_self_signed' => true,
+                'verify_peer_name' => false
+            )
+        ));
+        $this->io->on('workerStart', function ($socket){
+            $this->logger->info("Server starting...");
+        });
+        $this->io->on('workerStop', function ($socket){
+            $this->logger->info("Server stopping...");
+        });
+        $this->io->on('connection', function ($socket) {
+            $this->connect($socket);
+
+            $socket->on("error", function ($exception) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->handleException($client, $exception);
+                }
+            });
+        
+            $socket->on("disconnect", function ($reason) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    if($reason == $client->getId()){
+                        $reason = "leaving";
+                    }
+                    $this->disconnect($client, $reason);
+                }
+            });
+        
+            $socket->on("message", function($message) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->message($client, $message);
+                }
+            });
+            
+            $socket->on("toggle", function($resource) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->toggleResource($client, $resource);
+                }
+            });
+        
+            $socket->on("create", function($name, $password) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->createRoom($client, $name, $password);
+                }
+            });
+            
+            $socket->on("join", function($roomId, $password) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->joinRoom($client, $roomId, $password);
+                }
+            });
+        
+            $socket->on("leave", function() use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->leaveRoom($client);
+                }
+            });
+        
+            $socket->on("kick", function($userId) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->kickFromRoom($client, $userId);
+                }
+            });
+        
+            $socket->on("ban", function($userId) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->banFromRoom($client, $userId);
+                }
+            });
+        
+            $socket->on("unban", function($userId) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->unbanFromRoom($client, $userId);
+                }
+            });
+        
+            /**
+             * Calls
+             */
+            $socket->on("candidate", function($callId, $candidate) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->candidate($client, $callId, $candidate);
+                }
+            });
+        
+            $socket->on("offer", function($callId, $offer) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->offer($client, $callId, $offer);
+                }
+            });
+        
+            $socket->on("answer", function($callId, $answer) use ($socket) {
+                $client = $this->getClient($socket);
+                if($client !== false){
+                    $this->answer($client, $callId, $answer);
+                }
+            });
+        });
+    }
 }

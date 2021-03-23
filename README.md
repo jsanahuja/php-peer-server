@@ -65,7 +65,7 @@ The following is the list of events you can send to the server. For example `soc
 
 > `message(msg)` sends a message to the current room.
 
-> `toggle(resource)` toggles a resource. The resources are 'screen', 'video' and 'audio'.
+> `toggle(resource)` toggles a resource. The resources are 'video', 'microphone' and 'audio'.
 
 > `candidate(callId, candidate)` sends a candidate.
 

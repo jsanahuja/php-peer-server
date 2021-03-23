@@ -17,8 +17,8 @@ class Client{
         $this->room = false;
 
         $this->resources = [
-            "screen" => false,
             "video" => false,
+            "microphone" => false,
             "audio" => false
         ];
 
