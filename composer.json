@@ -3,7 +3,7 @@
     "description": "PHP Socket.io server for WebRTC signaling",
     "type": "project",
     "license": "MIT",
-    "version": "0.0.8",
+    "version": "0.0.10",
     "authors": [
         {
             "name": "Javier Sanahuja",
