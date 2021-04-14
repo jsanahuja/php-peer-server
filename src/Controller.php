@@ -88,7 +88,10 @@ class Controller{
 
     public function toggleResource($client, $resource){
         if($client->toggleResource($resource)){
-            $client->getRoom()->getSocket($this->io)->emit("r_resource", $client->getPublicInfo(), $client->getResources());
+            $room = $client->getRoom();
+            if($room !== false){
+                $room->getSocket($this->io)->emit("r_resource", $client->getPublicInfo(), $client->getResources());
+            }
         }
     }
 
